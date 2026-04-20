@@ -3,10 +3,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 
 #include <ncurses.h>
 
 #include "my.xbm"
+#include "smoke.xbm"
+#include "star.xbm"
 
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -15,12 +18,12 @@
 #define MAX_W 256
 #define MAX_H 256
 
-bool		gamble(float);
 
 void		render(void);
 void		fill_str(const char *);
-bool		corrupt(const char *, const char *);
-void		draw_bmp(const char *, const int, const int);
+int		gamble(int, int);
+bool		corrupt(const char *, const char *, const char *);
+void		draw_bmp(const char *, const int, const int, bool);
 
 void		setup(void);
 static void	finish(int);
@@ -29,27 +32,40 @@ bool		foreword(void);
 bool		my(void);
 bool		my_to_nicolas(void);
 bool		nicolas(void);
+bool		nicolas_to_prince(void);
+bool		prince(void);
 bool		afterword(void);
 
 
 static int	actual_w, actual_h;
 static char	screen[MAX_W][MAX_H];
+static char	colors[MAX_W][MAX_H];
 
-static bool	(*drawers[5])(void) = {
-	foreword,
-	my,
-	my_to_nicolas,
-	nicolas,
-	afterword,
-};
+static bool	(*drawers[7])(void) = {
+			foreword,
+			my,
+			my_to_nicolas,
+			nicolas,
+			nicolas_to_prince,
+			prince,
+			afterword,
+		};
 
 static int	active_drawer = 0;
-static int	t = 0;
+static int	t             = 0;
+static int	speed         = 1;
+
+void
+blank(void)
+{
+	memset(screen, ' ', sizeof(screen));
+	memset(colors, 0,   sizeof(colors));
+}
 
 bool
 foreword(void)
 {
-	memset(screen, ' ', sizeof(screen));
+	blank();
 
 	const char *str  = "little my ";
 	const int  strln = strlen(str);
@@ -80,14 +96,14 @@ my(void)
 	if (t == 20)
 		return true;
 
-	memset(screen, ' ', sizeof(screen));
+	blank();
 
 	fill_str("little my ");
 
 	if (t < 10)
 		return false;
 
-	draw_bmp(my_image_bits, my_image_height, my_image_width);
+	draw_bmp(my_image_bits, my_image_height, my_image_width, false);
 
 	return false;
 }
@@ -95,12 +111,23 @@ my(void)
 bool
 my_to_nicolas(void)
 {
-	if (corrupt("little my ", "little nicholas "))
-		return false;
-	
-	memset(screen, ' ', sizeof(screen));
+	if (t >= 20) {
+		speed = 1;
+		blank();
+		return true;
+	}
 
-	return true;
+	speed = 4;
+
+	const char *s_old = "my ";
+	const char *s_new = "nicholas ";
+
+	char c_new[9];
+	for(int i = 0; i < 9; i++)
+		c_new[i] = 1;
+
+	corrupt(s_old, s_new, c_new);
+	return false;
 }
 
 bool
@@ -108,10 +135,42 @@ nicolas(void)
 {
 	if (t == 20)
 		return true;
+
+	blank();
+
 	fill_str("little nicolas ");
 
 	if (t < 10)
 		return false;
+
+	draw_bmp(smoke_image_bits, smoke_image_height, smoke_image_width, true);
+
+	return false;
+}
+
+bool
+nicolas_to_prince(void)
+{
+	blank();
+	if (t < 10)
+		return false;
+	return true;	
+}
+
+bool
+prince(void)
+{
+	//if (t == 20)
+	//	return true;
+
+	//blank();
+
+	//fill_str("little prince ");
+
+	//if (t < 10)
+	//	return false;
+
+	draw_bmp(star_image_bits, star_image_height, star_image_width, false);
 
 	return false;
 }
@@ -119,7 +178,7 @@ nicolas(void)
 bool
 afterword(void)
 {
-	memset(screen, ' ', sizeof(screen));
+	blank();
 
 	const char *str  = "thanks for playing! ";
 	const int  strln = strlen(str);
@@ -148,6 +207,7 @@ draw(void)
 void
 little(int opt)
 {
+	blank();
 	active_drawer = opt == -1? active_drawer : opt;
 
 	while (true) {
@@ -159,6 +219,7 @@ little(int opt)
 		case 'r':
 			t = 0;
 			active_drawer = 0;
+			speed = 1;
 			break;
 		default:
 			/* do nothing */;
@@ -166,7 +227,7 @@ little(int opt)
 
 		draw();
 		render();
-		usleep(400000);
+		usleep(400000 / speed);
 		t++;
 	}
 }
@@ -184,14 +245,6 @@ main(int argc, char **argv)
 	finish(0);
 }
 
-bool
-gamble(float p)
-{
-	if ((float)rand() / (float)RAND_MAX < p)
-		return true;
-	return false;
-}
-
 void
 fill_str(const char *str)
 {
@@ -205,21 +258,25 @@ fill_str(const char *str)
 	}
 }
 
-bool
-corrupt(const char *old, const char *new)
+int
+gamble(int start, int end)
 {
-	const int oldln = strlen(old);
-	const int newln = strlen(new);
+	return rand() % (end + start) + start;
+}
 
-	int y, x;
+bool
+corrupt(const char *s_old, const char *s_new, const char* c_new)
+{
+	const int oldln = strlen(s_old);
+	const int newln = strlen(s_new);
+
 	bool found = false;
-	for (y = 0; y < actual_h; y++) {
-		for (x = 0; x < actual_w; x++) {
-			if (y * actual_w + x >= actual_h * actual_w - newln)
-				return false;
-			if (strncmp(&screen[y][x], old, oldln) != 0)
-				continue;
-			if (gamble(0.95))
+
+	int y = gamble(0, actual_h);
+	int x = gamble(0, actual_w);
+	for (; y < actual_h; y++) {
+		for (; x < actual_w; x++){
+			if (strncmp(&screen[y][x], s_old, oldln) != 0)
 				continue;
 			found = true;
 			break;
@@ -228,15 +285,22 @@ corrupt(const char *old, const char *new)
 			break;
 	}
 
-	char *start = &screen[y][x];
-	for (int i = 0; i < newln; i++)
-		*start++ = new[i];
+	if (!found)
+		return false;
+
+	char *s_start = &screen[y][x];
+	char *c_start = &colors[y][x];
+	for (int i = 0; i < newln; i++){
+		*s_start++ = s_new[i];
+		*c_start++ = c_new[i];
+	}
+
 	return true;
 }
 
 void
 draw_bmp(const char *image_bits, const int image_height,
-	 const int image_width)
+	 const int image_width, bool inv)
 {
 	const char *map  = " .,-~:;=!*#$@";
 	const int  mapln = strlen(map);
@@ -250,9 +314,13 @@ draw_bmp(const char *image_bits, const int image_height,
 	const int x_factor = factor / 2;
 
 	for (int y = 0; y < image_height; y++) {
+		const char *src_row = &image_bits[y * (image_width / 8)];
+		int        *dst_row = &counts[(y / y_factor) * actual_w];
 		for (int x = 0; x < image_width; x++) {
-			bool bit = (image_bits[y * (image_width / 8) + (x / 8)] >> (x % 8)) & 1;
-			counts[(y / y_factor) * actual_w + (x / x_factor)] += bit;
+			bool bit = (src_row[x / 8] >>  (x % 8)) & 1;
+			if (inv)
+				bit = (!bit) & 1;
+			dst_row[x / x_factor] += bit;
 		}
 	}
 
@@ -279,9 +347,16 @@ render(void)
 {
 	clear();
 
-	for (int y = 0; y < actual_h; y++)
-		for (int x = 0; x < actual_w; x++)
-			mvaddch(y, x, screen[y][x]);
+	for (int y = 0; y < actual_h; y++) {
+		for (int x = 0; x < actual_w; x++) {
+			char pixel = screen[y][x];
+			char color = colors[y][x];
+
+			attron(COLOR_PAIR(color));
+			mvaddch(y, x, pixel);
+			attroff(COLOR_PAIR(color));
+		}
+	}
 
 	refresh();
 }
@@ -289,12 +364,17 @@ render(void)
 void
 setup(void)
 {
+	srand(time(NULL));
 	signal(SIGINT, finish);
 
 	initscr();
 	noecho();
 	curs_set(0);
 	nodelay(stdscr, true);
+
+	start_color();
+	init_pair(0, COLOR_WHITE, COLOR_BLACK);
+	init_pair(1, COLOR_RED, COLOR_BLACK);
 }
 
 static void
