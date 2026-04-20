@@ -10,7 +10,6 @@
 #include "img/my.xbm"
 #include "img/smoke.xbm"
 #include "img/star.xbm"
-#include "img/unicorn.xbm"
 
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -58,6 +57,7 @@ static bool	(*drawers[NUM_DRAWERS])(void) = {
 static int	active_drawer = 0;
 static int	t             = 0;
 static int	speed         = 1;
+static bool	pause_draw    = false;
 
 void
 blank(void)
@@ -137,19 +137,7 @@ my_to_nicolas(void)
 bool
 nicolas(void)
 {
-	if (t == 20)
-		return true;
-
-	blank();
-
-	fill_str("little nicolas ");
-
-	if (t < 10)
-		return false;
-
-	draw_bmp(smoke_image_bits, smoke_image_height, smoke_image_width, true);
-
-	return false;
+	return true;
 }
 
 bool
@@ -187,8 +175,6 @@ prince(void)
 bool
 afterword(void)
 {
-	draw_bmp(unicorn_image_bits, unicorn_image_height, unicorn_image_width, false);
-	return false;
 	blank();
 
 	const char *str  = "thanks for playing!";
@@ -200,6 +186,11 @@ afterword(void)
 void
 draw(void)
 {
+	if (pause_draw)
+		return;
+
+	t++;
+
 	if (!drawers[active_drawer]())
 		return;
 
@@ -227,6 +218,9 @@ little(int opt)
 		case 'a':
 			active_drawer = NUM_DRAWERS - 1;
 			break;
+		case ' ':
+			pause_draw = !pause_draw;
+			break;
 		default:
 			/* do nothing */;
 		}
@@ -234,7 +228,6 @@ little(int opt)
 		draw();
 		render();
 		usleep(400000 / speed);
-		t++;
 	}
 }
 
@@ -395,7 +388,7 @@ setup(void)
 
 	start_color();
 	init_pair(0, COLOR_WHITE, COLOR_BLACK);
-	init_pair(1, COLOR_RED, COLOR_BLACK);
+	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
 }
 
 static void

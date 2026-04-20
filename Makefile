@@ -1,11 +1,14 @@
-make run: little
-	./little
+all: little seahorse
 
 .PHONY: little
 little:
-	gcc little.c -o little -lncurses
+	gcc -pedantic little.c -o little -lncurses
+
+.PHONY: seahorse
+seahorse:
+	gcc -pedantic seahorse.c -o seahorse -lncurses
 
 .PHONY: clean
 clean:
-	rm -f little obfuscated_little.c
+	rm -f little seahorse
 
