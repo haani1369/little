@@ -19,29 +19,32 @@
 #define MAX_H 256
 
 
-void		render(void);
-void		fill_str(const char *);
-int		gamble(int, int);
-bool		corrupt(const char *, const char *, const char *);
-void		draw_bmp(const char *, const int, const int, bool);
+void		render		  (void);
+void		center_print	  (const char *);
+void		fill_str	  (const char *);
+int		gamble		  (int, int);
+bool		corrupt		  (const char *, const char *, const char *);
+void		draw_bmp	  (const char *, const int, const int, bool);
 
-void		setup(void);
-static void	finish(int);
+void		setup		  (void);
+static void	finish		  (int);
 
-bool		foreword(void);
-bool		my(void);
-bool		my_to_nicolas(void);
-bool		nicolas(void);
-bool		nicolas_to_prince(void);
-bool		prince(void);
-bool		afterword(void);
+#define NUM_DRAWERS 7
+
+bool		foreword	  (void);
+bool		my		  (void);
+bool		my_to_nicolas	  (void);
+bool		nicolas		  (void);
+bool		nicolas_to_prince (void);
+bool		prince		  (void);
+bool		afterword	  (void);
 
 
 static int	actual_w, actual_h;
 static char	screen[MAX_W][MAX_H];
 static char	colors[MAX_W][MAX_H];
 
-static bool	(*drawers[7])(void) = {
+static bool	(*drawers[NUM_DRAWERS])(void) = {
 			foreword,
 			my,
 			my_to_nicolas,
@@ -151,25 +154,30 @@ nicolas(void)
 bool
 nicolas_to_prince(void)
 {
+	if (t >= 15)
+		return true;
+
 	blank();
-	if (t < 10)
+
+	if (t < 5)
 		return false;
-	return true;	
+
+	const char *ref_str = "loading      ";	
+
+	char *str = malloc(sizeof(ref_str));
+	strcpy(str, ref_str);
+
+	for (int i = 0; i < (t & 3); i++)
+		str[i + 7] = '.';
+	
+	center_print(str);
+
+	return false;	
 }
 
 bool
 prince(void)
 {
-	//if (t == 20)
-	//	return true;
-
-	//blank();
-
-	//fill_str("little prince ");
-
-	//if (t < 10)
-	//	return false;
-
 	draw_bmp(star_image_bits, star_image_height, star_image_width, false);
 
 	return false;
@@ -180,16 +188,8 @@ afterword(void)
 {
 	blank();
 
-	const char *str  = "thanks for playing! ";
-	const int  strln = strlen(str);
-
-	const int y       = actual_h / 2;
-	const int start_x = actual_w / 2 - strln / 2;
-	const int end_x   = actual_w / 2 + strln / 2;
-
-	int i = 0;
-	for (int x = start_x; x < end_x; x++)
-		screen[y][x] = str[i++]; 
+	const char *str  = "thanks for playing!";
+	center_print(str);
 
 	return false;
 }
@@ -221,6 +221,9 @@ little(int opt)
 			active_drawer = 0;
 			speed = 1;
 			break;
+		case 'a':
+			active_drawer = NUM_DRAWERS - 1;
+			break;
 		default:
 			/* do nothing */;
 		}
@@ -243,6 +246,20 @@ main(int argc, char **argv)
 		little(atoi(argv[1]));
 
 	finish(0);
+}
+
+void
+center_print(const char *str)
+{
+	const int  strln = strlen(str);
+
+	const int y       = actual_h / 2;
+	const int start_x = actual_w / 2 - strln / 2;
+	const int end_x   = actual_w / 2 + strln / 2 + ((actual_w ^ strln) & 1);
+
+	int i = 0;
+	for (int x = start_x; x < end_x; x++)
+		screen[y][x] = str[i++]; 
 }
 
 void
@@ -336,6 +353,7 @@ draw_bmp(const char *image_bits, const int image_height,
 	for (int y = start_y; y < end_y; y++)
 		for (int x = start_x; x < end_x; x++){
 			int uhh = (int)((float)mapln * counts[y * actual_w + x] / max_);
+			uhh = max(min(uhh, mapln-1), 0);
 			screen[y][x] = map[uhh];
 		}
 
