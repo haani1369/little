@@ -7,16 +7,17 @@
 
 #include <ncurses.h>
 
-#include "my.xbm"
-#include "smoke.xbm"
-#include "star.xbm"
+#include "img/my.xbm"
+#include "img/smoke.xbm"
+#include "img/star.xbm"
+#include "img/unicorn.xbm"
 
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
-#define MAX_W 256
-#define MAX_H 256
+#define MAX_W 1024
+#define MAX_H 1024
 
 
 void		render		  (void);
@@ -186,6 +187,8 @@ prince(void)
 bool
 afterword(void)
 {
+	draw_bmp(unicorn_image_bits, unicorn_image_height, unicorn_image_width, false);
+	return false;
 	blank();
 
 	const char *str  = "thanks for playing!";

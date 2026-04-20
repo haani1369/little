@@ -7,5 +7,5 @@ little:
 
 .PHONY: clean
 clean:
-	rm -f little
+	rm -f little obfuscated_little.c
 
