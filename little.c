@@ -8,7 +8,7 @@
 #include <ncurses.h>
 
 #include "img/my.xbm"
-#include "img/smoke.xbm"
+#include "img/nicolas.xbm"
 #include "img/star.xbm"
 
 
@@ -115,13 +115,12 @@ my(void)
 bool
 my_to_nicolas(void)
 {
-	if (t >= 20) {
+	if (t >= 40) {
 		speed = 1;
-		blank();
 		return true;
 	}
 
-	speed = 4;
+	speed = 8;
 
 	const char *s_old = "my ";
 	const char *s_new = "nicholas ";
@@ -130,14 +129,24 @@ my_to_nicolas(void)
 	for(int i = 0; i < 9; i++)
 		c_new[i] = 1;
 
-	corrupt(s_old, s_new, c_new);
+	corrupt("my ", s_new, c_new);
+	corrupt("little ", s_new, c_new);
 	return false;
 }
 
 bool
 nicolas(void)
 {
-	return true;
+	if (t >= 15)
+		return true;
+
+	blank();
+	//memset(colors, 1, sizeof(colors));
+
+	fill_str("nicolas ");
+	draw_bmp(nicolas_image_bits, nicolas_image_height,
+		 nicolas_image_width, false);
+	return false;
 }
 
 bool
@@ -251,7 +260,7 @@ center_print(const char *str)
 
 	const int y       = actual_h / 2;
 	const int start_x = actual_w / 2 - strln / 2;
-	const int end_x   = actual_w / 2 + strln / 2 + ((actual_w ^ strln) & 1);
+	const int end_x   = actual_w / 2 + strln / 2 + ((actual_w | strln) & 1);
 
 	int i = 0;
 	for (int x = start_x; x < end_x; x++)
@@ -285,11 +294,14 @@ corrupt(const char *s_old, const char *s_new, const char* c_new)
 
 	bool found = false;
 
-	int y = gamble(0, actual_h);
-	int x = gamble(0, actual_w);
-	for (; y < actual_h; y++) {
-		for (; x < actual_w; x++){
-			if (strncmp(&screen[y][x], s_old, oldln) != 0)
+	int y     = gamble(0, actual_h);
+	int y_end = actual_h + y;
+	int x     = gamble(0, actual_w);
+	int x_end = actual_w + x;
+	for (; y < y_end; y++) {
+		for (; x < x_end; x++){
+			char *s = &screen[y % actual_h][x % actual_w];
+			if (strncmp(s, s_old, oldln) != 0)
 				continue;
 			found = true;
 			break;
@@ -351,6 +363,7 @@ draw_bmp(const char *image_bits, const int image_height,
 			int uhh = (int)((float)mapln * counts[y * actual_w + x] / max_);
 			uhh = max(min(uhh, mapln-1), 0);
 			screen[y][x] = map[uhh];
+			colors[y][x] = 0;
 		}
 
 	free(counts);
