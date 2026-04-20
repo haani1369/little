@@ -24,7 +24,7 @@ void		center_print	  (const char *);
 void		fill_str	  (const char *);
 int		gamble		  (int, int);
 bool		corrupt		  (const char *, const char *, const char *);
-void		draw_bmp	  (const char *, const int, const int, bool);
+void		draw_bmp	  (const char *, const int, const int);
 
 void		setup		  (void);
 static void	finish		  (int);
@@ -58,6 +58,7 @@ static int	active_drawer = 0;
 static int	t             = 0;
 static int	speed         = 1;
 static bool	pause_draw    = false;
+static bool	inv	      = false;
 
 void
 blank(void)
@@ -107,7 +108,7 @@ my(void)
 	if (t < 10)
 		return false;
 
-	draw_bmp(my_image_bits, my_image_height, my_image_width, false);
+	draw_bmp(my_image_bits, my_image_height, my_image_width);
 
 	return false;
 }
@@ -122,7 +123,6 @@ my_to_nicolas(void)
 
 	speed = 8;
 
-	const char *s_old = "my ";
 	const char *s_new = "nicholas ";
 
 	char c_new[9];
@@ -141,11 +141,10 @@ nicolas(void)
 		return true;
 
 	blank();
-	//memset(colors, 1, sizeof(colors));
 
 	fill_str("nicolas ");
 	draw_bmp(nicolas_image_bits, nicolas_image_height,
-		 nicolas_image_width, false);
+		 nicolas_image_width);
 	return false;
 }
 
@@ -161,10 +160,8 @@ nicolas_to_prince(void)
 		return false;
 
 	const char *ref_str = "loading      ";	
-
 	char *str = malloc(sizeof(ref_str));
 	strcpy(str, ref_str);
-
 	for (int i = 0; i < (t & 3); i++)
 		str[i + 7] = '.';
 	
@@ -176,7 +173,7 @@ nicolas_to_prince(void)
 bool
 prince(void)
 {
-	draw_bmp(star_image_bits, star_image_height, star_image_width, false);
+	draw_bmp(star_image_bits, star_image_height, star_image_width);
 
 	return false;
 }
@@ -226,6 +223,9 @@ little(int opt)
 			break;
 		case 'a':
 			active_drawer = NUM_DRAWERS - 1;
+			break;
+		case 'i':
+			inv = !inv;
 			break;
 		case ' ':
 			pause_draw = !pause_draw;
@@ -325,7 +325,7 @@ corrupt(const char *s_old, const char *s_new, const char* c_new)
 
 void
 draw_bmp(const char *image_bits, const int image_height,
-	 const int image_width, bool inv)
+	 const int image_width)
 {
 	const char *map  = " .,-~:;=!*#$@";
 	const int  mapln = strlen(map);
