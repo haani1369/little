@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
-#include <time.h>
 
 #include <ncurses.h>
 
@@ -12,11 +11,7 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
-#define MAX_W 2048
-#define MAX_H 2048
-
 static int	actual_w, actual_h;
-static char	screen[MAX_W][MAX_H];
 
 static char	*code;
 static int	codeln;
@@ -70,7 +65,6 @@ finish(int sig)
 void
 setup(void)
 {
-	srand(time(NULL));
 	signal(SIGINT, finish);
 
 	initscr();
