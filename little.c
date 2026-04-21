@@ -29,8 +29,9 @@ void		draw_bmp	  (const char *, const int, const int);
 void		setup		  (void);
 static void	finish		  (int);
 
-#define NUM_DRAWERS 7
+#define NUM_DRAWERS 8
 
+bool		start		  (void);
 bool		foreword	  (void);
 bool		my		  (void);
 bool		my_to_nicolas	  (void);
@@ -45,6 +46,7 @@ static char	screen[MAX_W][MAX_H];
 static char	colors[MAX_W][MAX_H];
 
 static bool	(*drawers[NUM_DRAWERS])(void) = {
+			start,
 			foreword,
 			my,
 			my_to_nicolas,
@@ -65,6 +67,15 @@ blank(void)
 {
 	memset(screen, ' ', sizeof(screen));
 	memset(colors, 0,   sizeof(colors));
+}
+
+bool
+start(void)
+{
+	if (t >= 5)
+		return true;
+	blank();
+	return false;
 }
 
 bool
